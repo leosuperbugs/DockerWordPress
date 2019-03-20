@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+  php-fpm:
+    image: php:7-fpm
+    build:
+      context: .
+      dockerfile: ./php-fpm/Dockerfile
+    environment:
+      XDEBUG_CONFIG: remote_host=docker.for.mac.localhost
+    networks:
+      - code-network
+    restart: unless-stopped
+    volumes:
+      - ./../wordpress:/var/www/wordpress
+
+  nginx:
+    image: nginx:latest
+    build:
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    depends_on:
+      - php-fpm
+    networks:
+      - code-network
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./../wordpress:/var/www/wordpress
+
+  redis:
+    build:
+      context: .
+      dockerfile: ./redis/Dockerfile
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - code-network
+
+  database:
+    build:
+      context: .
+      dockerfile: ./database/Dockerfile
+    environment:
+      - MYSQL_DATABASE=test
+      - MYSQL_USER=clip
+      - MYSQL_PASSWORD=d
+      - MYSQL_ROOT_PASSWORD=d
+    networks:
+      - code-network
+    restart: unless-stopped
+
+networks:
+  code-network:
+    driver: bridge
